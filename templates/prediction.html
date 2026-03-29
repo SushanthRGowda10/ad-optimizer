@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block title %}AI Prediction — AdOptimizer{% endblock %}
+{% block page_title %}AI Performance Prediction{% endblock %}
+
+{% block content %}
+
+<div class="prediction-grid">
+
+  <!-- Prediction Form -->
+  <div class="prediction-form-card section-card">
+    <h3 class="section-title"><i class="fa-solid fa-brain"></i> Campaign Simulator</h3>
+    <p class="section-desc">Input your campaign parameters and our AI will predict expected performance.</p>
+
+    <form method="POST" action="{{ url_for('prediction.prediction') }}" id="predForm">
+
+      <div class="form-group-pred">
+        <label>Platform</label>
+        <select name="platform" class="pred-select">
+          {% for p in platforms %}
+          <option value="{{ p }}" {% if request.form.get('platform') == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group-pred">
+        <label>Age Group</label>
+        <select name="age_group" class="pred-select">
+          {% for a in age_groups %}
+          <option value="{{ a }}" {% if request.form.get('age_group') == a %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group-pred">
+        <label>Device</label>
+        <select name="device" class="pred-select">
+          {% for d in devices %}
+          <option value="{{ d }}" {% if request.form.get('device') == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group-pred">
+        <label>Budget ($)</label>
+        <input type="number" name="budget" class="pred-input" value="{{ request.form.get('budget', 1000) }}" min="1" step="100"/>
+      </div>
+
+      <div class="form-group-pred">
+        <label>Expected Impressions</label>
+        <input type="number" name="impressions" class="pred-input" value="{{ request.form.get('impressions', 10000) }}" min="100" step="500"/>
+      </div>
+
+      <button type="submit" class="btn-predict">
+        <i class="fa-solid fa-bolt"></i> Run Prediction
+      </button>
+    </form>
+  </div>
+
+  <!-- Results Panel -->
+  <div class="prediction-results">
+    {% if pred_result %}
+
+    <!-- KPI Results -->
+    <div class="result-grid">
+      <div class="result-kpi" style="--col:#6366f1">
+        <div class="result-icon"><i class="fa-solid fa-arrow-pointer"></i></div>
+        <div class="result-val">{{ pred_result.predicted_clicks }}</div>
+        <div class="result-lbl">Predicted Clicks</div>
+      </div>
+      <div class="result-kpi" style="--col:#10b981">
+        <div class="result-icon"><i class="fa-solid fa-check-double"></i></div>
+        <div class="result-val">{{ pred_result.predicted_conversions }}</div>
+        <div class="result-lbl">Predicted Conversions</div>
+      </div>
+      <div class="result-kpi" style="--col:#f59e0b">
+        <div class="result-icon"><i class="fa-solid fa-percent"></i></div>
+        <div class="result-val">{{ pred_result.expected_ctr }}%</div>
+        <div class="result-lbl">Expected CTR</div>
+      </div>
+      <div class="result-kpi" style="--col:#ec4899">
+        <div class="result-icon"><i class="fa-solid fa-repeat"></i></div>
+        <div class="result-val">{{ pred_result.conversion_rate }}%</div>
+        <div class="result-lbl">Conversion Rate</div>
+      </div>
+    </div>
+
+    <!-- Performance Score -->
+    <div class="section-card mt-3">
+      <div class="chart-header"><h3>Ad Performance Score</h3></div>
+      <div class="perf-score-bar-wrap">
+        <div class="perf-score-bar">
+          <div class="perf-score-fill" style="width: {{ pred_result.performance_score }}%"></div>
+        </div>
+        <span class="perf-score-num">{{ pred_result.performance_score }}/100</span>
+      </div>
+
+      {% if pred_result.performance_score >= 70 %}
+        <div class="perf-verdict verdict-good"><i class="fa-solid fa-circle-check"></i> Strong predicted performance. Scale this campaign.</div>
+      {% elif pred_result.performance_score >= 40 %}
+        <div class="perf-verdict verdict-mid"><i class="fa-solid fa-triangle-exclamation"></i> Moderate performance. Optimization recommended.</div>
+      {% else %}
+        <div class="perf-verdict verdict-bad"><i class="fa-solid fa-circle-xmark"></i> Low performance. Revise strategy before launching.</div>
+      {% endif %}
+    </div>
+
+    <!-- 🧠 AI Recommendation -->
+    {% if recommendation %}
+    <div class="section-card mt-3">
+      <div class="chart-header"><h3>AI Recommendation</h3></div>
+      <div class="alert alert-info">
+        <i class="fa-solid fa-lightbulb"></i> {{ recommendation }}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 🤖 Model Used -->
+    {% if best_model_info %}
+    <div class="section-card mt-3">
+      <div class="chart-header"><h3>Model Used</h3></div>
+      <p><strong>{{ best_model_info }}</strong></p>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="section-card prediction-placeholder">
+      <div class="placeholder-icon"><i class="fa-solid fa-robot"></i></div>
+      <h4>Set parameters and run prediction</h4>
+      <p>Our AI models will estimate clicks, conversions, CTR, and overall performance score.</p>
+    </div>
+    {% endif %}
+
+    <!-- 📊 Model Metrics -->
+    {% if model_metrics %}
+    <div class="section-card mt-3">
+      <div class="chart-header"><h3>Model Comparison</h3></div>
+
+      {% for target, models in model_metrics.items() %}
+      <div class="model-section">
+        <div class="model-target-label">Predicting: <strong>{{ target }}</strong></div>
+
+        <div class="model-metrics-grid">
+          {% set best_r2 = models.values() | map(attribute='r2') | max %}
+
+          {% for name, metrics in models.items() %}
+          <div class="model-metric-card {% if metrics.r2 == best_r2 %}model-active{% endif %}">
+            <div class="model-name">{{ name }}</div>
+            <div class="model-r2">R² <span>{{ metrics.r2 }}</span></div>
+            <div class="model-mae">MAE <span>{{ metrics.mae }}</span></div>
+
+            {% if metrics.r2 == best_r2 %}
+            <div class="best-badge">Best Model</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 🚀 A/B Testing Shortcut -->
+    <div class="section-card mt-3 text-center">
+      <a href="/ab-test" class="btn btn-warning">
+        <i class="fa-solid fa-vial"></i> Try A/B Testing
+      </a>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

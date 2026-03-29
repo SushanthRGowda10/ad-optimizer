@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+{% block title %}Optimization — AdOptimizer{% endblock %}
+{% block page_title %}Campaign Optimization{% endblock %}
+
+{% block content %}
+{% if no_data %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+  <h3>No Data Available</h3>
+  <p>Upload a campaign dataset to generate optimization recommendations.</p>
+  <a href="{{ url_for('dataset.upload') }}" class="btn-primary-custom">Upload Dataset</a>
+</div>
+{% else %}
+
+<!-- Score Banner -->
+<div class="score-banner">
+  <div class="score-left">
+    <div class="score-label">Optimization Score</div>
+    <div class="score-value">{{ recs.optimization_score }}<span>/100</span></div>
+    <div class="score-desc">Based on conversion rates and CTR across all campaigns</div>
+  </div>
+  <div class="score-ring-wrap">
+    <canvas id="scoreGauge" width="140" height="140"></canvas>
+  </div>
+</div>
+
+<!-- Best Performers Grid -->
+<div class="rec-grid">
+  <div class="rec-card rec-card-platform">
+    <div class="rec-icon"><i class="fa-brands fa-meta"></i></div>
+    <div class="rec-label">Best Platform</div>
+    <div class="rec-value">{{ recs.best_platform }}</div>
+    <div class="rec-tip">Highest conversion rate platform</div>
+  </div>
+  <div class="rec-card rec-card-age">
+    <div class="rec-icon"><i class="fa-solid fa-users"></i></div>
+    <div class="rec-label">Best Age Group</div>
+    <div class="rec-value">{{ recs.best_age_group }}</div>
+    <div class="rec-tip">Top converting audience segment</div>
+  </div>
+  <div class="rec-card rec-card-device">
+    <div class="rec-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+    <div class="rec-label">Best Device</div>
+    <div class="rec-value">{{ recs.best_device }}</div>
+    <div class="rec-tip">Highest engagement device type</div>
+  </div>
+  <div class="rec-card rec-card-campaign">
+    <div class="rec-icon"><i class="fa-solid fa-trophy"></i></div>
+    <div class="rec-label">Top Campaign</div>
+    <div class="rec-value">{{ recs.best_campaign }}</div>
+    <div class="rec-tip">Best cost-per-conversion ratio</div>
+  </div>
+</div>
+
+<!-- Action Recommendations -->
+<div class="charts-row">
+  <div class="section-card flex-1">
+    <h3 class="section-title"><i class="fa-solid fa-arrow-trend-up text-success"></i> Increase Budget</h3>
+    <p class="section-desc">These campaigns have high CTR but low spend — scale them up.</p>
+    {% if recs.increase_budget %}
+      {% for camp in recs.increase_budget %}
+      <div class="action-item action-increase">
+        <i class="fa-solid fa-circle-arrow-up"></i>
+        <span>{{ camp }}</span>
+        <span class="action-badge action-badge-green">↑ Scale</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-action">No campaigns flagged for budget increase.</div>
+    {% endif %}
+  </div>
+
+  <div class="section-card flex-1">
+    <h3 class="section-title"><i class="fa-solid fa-pause text-danger"></i> Pause Campaigns</h3>
+    <p class="section-desc">Low conversion rate + high cost — consider pausing these.</p>
+    {% if recs.pause_campaigns %}
+      {% for camp in recs.pause_campaigns %}
+      <div class="action-item action-pause">
+        <i class="fa-solid fa-circle-pause"></i>
+        <span>{{ camp }}</span>
+        <span class="action-badge action-badge-red">⏸ Pause</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-action">No campaigns flagged for pausing. Great job!</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Budget Insight -->
+<div class="section-card insight-card">
+  <div class="insight-icon"><i class="fa-solid fa-lightbulb"></i></div>
+  <div class="insight-text">
+    <strong>Budget Shift Recommendation</strong>
+    <p>{{ recs.budget_insight }}</p>
+  </div>
+</div>
+
+<!-- Platform Insights Table -->
+<div class="table-card">
+  <div class="chart-header">
+    <h3>Platform Performance Insights</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>Platform</th><th>CTR (%)</th><th>Conv Rate (%)</th><th>Total Spend ($)</th><th>Recommendation</th></tr>
+      </thead>
+      <tbody>
+        {% for p in recs.platform_insights %}
+        <tr>
+          <td><span class="platform-tag">{{ p.platform }}</span></td>
+          <td>{{ p.ctr }}</td>
+          <td>{{ p.conv_rate }}</td>
+          <td>${{ "{:,.2f}".format(p.total_cost) }}</td>
+          <td>
+            {% if p.conv_rate > 2 %}
+              <span class="status-badge status-green">Scale Up</span>
+            {% elif p.conv_rate > 0.5 %}
+              <span class="status-badge status-yellow">Optimize</span>
+            {% else %}
+              <span class="status-badge status-red">Review</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- AI Advanced Optimized Analysis Section -->
+<div class="section-card mt-4" style="border: 2px solid #6366f1; background: linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(16,185,129,0.05) 100%);">
+  <div class="chart-header">
+    <h3 style="color: #6366f1;"><i class="fa-solid fa-brain"></i> AI Optimized Analysis</h3>
+    <p class="section-desc">Machine learning-powered optimization insights and forecasts</p>
+  </div>
+
+  <!-- AI Score & Confidence -->
+  <div class="rec-grid" style="margin-top: 1.5rem;">
+    <div class="rec-card" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white;">
+      <div class="rec-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <div class="rec-label">Overall Optimization Potential</div>
+      <div class="rec-value">{{ ai_report.overall_optimization_score }}/100</div>
+      <div class="rec-tip">AI Confidence: {{ ai_report.ai_confidence_level }}</div>
+    </div>
+    
+    <div class="rec-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+      <div class="rec-icon"><i class="fa-solid fa-coins"></i></div>
+      <div class="rec-label">Projected Conversion Lift</div>
+      <div class="rec-value">+{{ ai_report.budget_optimization.conversion_lift_percent }}%</div>
+      <div class="rec-tip">With optimized budget allocation</div>
+    </div>
+    
+    <div class="rec-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+      <div class="rec-icon"><i class="fa-solid fa-bullseye"></i></div>
+      <div class="rec-label">Campaigns Analyzed</div>
+      <div class="rec-value">{{ ai_report.total_campaigns_analyzed }}</div>
+      <div class="rec-tip">Using ML clustering algorithms</div>
+    </div>
+  </div>
+
+  <!-- Campaign Performance Scores -->
+  <div style="margin-top: 2rem;">
+    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-ranking-star"></i> AI Campaign Rankings</h4>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Campaign</th>
+            <th>AI Score</th>
+            <th>Performance Tier</th>
+            <th>Conversions</th>
+            <th>ROAS</th>
+            <th>Efficiency</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for campaign in ai_report.campaign_scores %}
+          <tr>
+            <td><strong>#{{ campaign.rank }}</strong></td>
+            <td>{{ campaign.campaign_name }}</td>
+            <td>
+              <span style="font-weight: bold; color: {% if campaign.ai_score >= 75 %}#10b981{% elif campaign.ai_score >= 50 %}#3b82f6{% elif campaign.ai_score >= 25 %}#f59e0b{% else %}#ef4444{% endif %};">
+                {{ campaign.ai_score }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge {% if campaign.performance_tier == 'Excellent' %}status-green{% elif campaign.performance_tier == 'Good' %}status-blue{% elif campaign.performance_tier == 'Average' %}status-yellow{% else %}status-red{% endif %}">
+                {{ campaign.performance_tier }}
+              </span>
+            </td>
+            <td>{{ "%.0f"|format(campaign.conv_sum) }}</td>
+            <td>{{ "%.2f"|format(campaign.roas) }}x</td>
+            <td>{{ "%.2f"|format(campaign.efficiency) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Budget Optimization Recommendations -->
+  <div style="margin-top: 2rem;">
+    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-pie-chart"></i> AI Budget Allocation Optimization</h4>
+    <div class="insight-card" style="background: #f8fafc; border-left: 4px solid #6366f1;">
+      <div class="insight-icon"><i class="fa-solid fa-lightbulb" style="color: #6366f1;"></i></div>
+      <div class="insight-text">
+        <strong>Smart Budget Reallocation Strategy</strong>
+        <p style="margin-top: 0.5rem;">
+          Current conversions: <strong>{{ "%.0f"|format(ai_report.budget_optimization.current_conversions) }}</strong> | 
+          Projected with AI optimization: <strong>{{ "%.0f"|format(ai_report.budget_optimization.projected_conversions) }}</strong> | 
+          <span style="color: #10b981;">Lift: +{{ "%.1f"|format(ai_report.budget_optimization.conversion_lift_percent) }}%</span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="table-responsive" style="margin-top: 1rem;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>Current Budget</th>
+            <th>AI Recommended Budget</th>
+            <th>Change</th>
+            <th>Projected Conversions</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for camp in ai_report.budget_optimization.campaigns[:5] %}
+          <tr>
+            <td><strong>{{ camp.campaign_name }}</strong></td>
+            <td>${{ "{:,.2f}".format(camp.current_budget) }}</td>
+            <td style="color: #6366f1; font-weight: bold;">${{ "{:,.2f}".format(camp.optimized_budget) }}</td>
+            <td>
+              {% if camp.budget_change > 10 %}
+                <span style="color: #10b981;">▲ +{{ "%.0f"|format(camp.budget_change) }}%</span>
+              {% elif camp.budget_change < -10 %}
+                <span style="color: #ef4444;">▼ {{ "%.0f"|format(camp.budget_change) }}%</span>
+              {% else %}
+                <span style="color: #64748b;">• {{ "%.0f"|format(camp.budget_change) }}%</span>
+              {% endif %}
+            </td>
+            <td>{{ "%.0f"|format(camp.projected_conversions) }}</td>
+            <td>
+              {% if camp.budget_change > 20 %}
+                <span class="status-badge status-green">Scale Up</span>
+              {% elif camp.budget_change < -20 %}
+                <span class="status-badge status-red">Reduce</span>
+              {% else %}
+                <span class="status-badge status-yellow">Maintain</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ROI Forecast Scenarios -->
+  <div style="margin-top: 2rem;">
+    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-chart-area"></i> ROI Forecast Scenarios</h4>
+    <div class="rec-grid">
+      {% for forecast in ai_report.roi_forecast.forecasts %}
+      <div class="rec-card" style="border: 2px solid {% if forecast.scenario == ai_report.roi_forecast.recommended_scenario %}#10b981{% else %}#e2e8f0{% endif %}; background: {% if forecast.scenario == ai_report.roi_forecast.recommended_scenario %}linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(5,150,105,0.05) 100%){% else %}#f8fafc{% endif %};">
+        <div class="rec-label" style="color: {% if forecast.scenario == ai_report.roi_forecast.recommended_scenario %}#059669{% else %}#64748b{% endif %};">
+          {% if forecast.scenario == ai_report.roi_forecast.recommended_scenario %}★ {% endif %}{{ forecast.scenario }}
+        </div>
+        <div class="rec-value" style="font-size: 1.5rem; margin: 0.5rem 0;">${{ "{:,.0f}".format(forecast.budget) }}</div>
+        <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem;">
+          Budget: {% if forecast.budget_change_percent > 0 %}+{% endif %}{{ "%.0f"|format(forecast.budget_change_percent) }}%
+        </div>
+        <div style="font-size: 0.875rem;"><strong>ROI:</strong> {{ "%.1f"|format(forecast.projected_roi) }}%</div>
+        <div style="font-size: 0.875rem;"><strong>Conversions:</strong> {{ "%.0f"|format(forecast.projected_conversions) }}</div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Confidence: {{ forecast.confidence }}%</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Audience Targeting Insights -->
+  <div style="margin-top: 2rem;">
+    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-users-gear"></i> AI Audience Targeting Insights</h4>
+    <div class="charts-row">
+      <div class="section-card flex-1">
+        <h5 class="section-title" style="font-size: 1rem;"><i class="fa-solid fa-star" style="color: #f59e0b;"></i> Top Performing Segments</h5>
+        {% for segment in ai_report.audience_targeting.top_segments[:3] %}
+        <div class="action-item action-increase" style="margin-bottom: 0.75rem;">
+          <div style="flex: 1;">
+            <div style="font-weight: bold;">{{ segment.platform }} + {{ segment.age_group }} + {{ segment.device }}</div>
+            <div style="font-size: 0.875rem; color: #64748b;">
+              Conv Rate: {{ "%.2f"|format(segment.conv_rate * 100) }}% | CPA: ${{ "%.2f"|format(segment.cpa) }}
+            </div>
+          </div>
+          <span class="action-badge action-badge-green">Score: {{ "%.1f"|format(segment.score) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      
+      <div class="section-card flex-1">
+        <h5 class="section-title" style="font-size: 1rem;"><i class="fa-solid fa-crosshairs" style="color: #3b82f6;"></i> Platform-Age Recommendations</h5>
+        {% for rec in ai_report.audience_targeting.platform_age_recommendations[:3] %}
+        <div class="action-item" style="margin-bottom: 0.75rem; border-left: 3px solid #3b82f6; padding-left: 0.75rem;">
+          <div style="flex: 1;">
+            <div style="font-weight: bold;">{{ rec.platform }}</div>
+            <div style="font-size: 0.875rem; color: #64748b;">
+              Target: {{ rec.recommended_age_group }}
+            </div>
+          </div>
+          <span class="action-badge" style="background: #dbeafe; color: #1e40af;">{{ rec.expected_performance }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- A/B Testing Recommendations -->
+  <div style="margin-top: 2rem;">
+    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-flask"></i> AI-Powered A/B Testing Recommendations</h4>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Test Type</th>
+            <th>Element</th>
+            <th>Hypothesis</th>
+            <th>Priority</th>
+            <th>Expected Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for test in ai_report.ab_testing_recommendations %}
+          <tr>
+            <td><strong>{{ test.test_type }}</strong></td>
+            <td>{{ test.element }}</td>
+            <td>{{ test.hypothesis }}</td>
+            <td>
+              <span class="status-badge {% if test.priority == 'High' %}status-green{% elif test.priority == 'Medium' %}status-yellow{% else %}status-blue{% endif %}">
+                {{ test.priority }}
+              </span>
+            </td>
+            <td style="color: #10b981;">{{ test.expected_impact }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+<!-- End AI Advanced Optimized Analysis Section -->
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if not no_data %}
+<script>
+// Score Gauge using arc
+const score = {{ recs.optimization_score }};
+const canvas = document.getElementById('scoreGauge');
+const ctx = canvas.getContext('2d');
+const cx = 70, cy = 75, r = 55;
+const start = Math.PI * 0.75, end = Math.PI * 2.25;
+const fillEnd = start + (end - start) * (score / 100);
+
+// Background arc
+ctx.beginPath(); ctx.arc(cx, cy, r, start, end); ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.stroke();
+// Filled arc
+const grad = ctx.createLinearGradient(0, 0, 140, 0);
+grad.addColorStop(0, '#6366f1'); grad.addColorStop(1, '#10b981');
+ctx.beginPath(); ctx.arc(cx, cy, r, start, fillEnd); ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.strokeStyle = grad; ctx.stroke();
+// Text
+ctx.fillStyle = '#f1f5f9'; ctx.font = 'bold 22px DM Sans'; ctx.textAlign = 'center'; ctx.fillText(score, cx, cy + 4);
+ctx.fillStyle = '#64748b'; ctx.font = '11px DM Sans'; ctx.fillText('SCORE', cx, cy + 20);
+</script>
+{% endif %}
+{% endblock %}

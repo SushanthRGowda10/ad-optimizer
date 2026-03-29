@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% block title %}Analytics — AdOptimizer{% endblock %}
+{% block page_title %}Campaign Analytics{% endblock %}
+
+{% block content %}
+{% if no_data %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fa-solid fa-chart-bar"></i></div>
+  <h3>No Data Available</h3>
+  <p>Upload a campaign dataset to view detailed analytics.</p>
+  <a href="{{ url_for('dataset.upload') }}" class="btn-primary-custom">Upload Dataset</a>
+</div>
+{% else %}
+
+<!-- Tabs -->
+<div class="tab-nav">
+  <button class="tab-btn active" data-tab="campaigns">Campaigns</button>
+  <button class="tab-btn" data-tab="platforms">Platforms</button>
+  <button class="tab-btn" data-tab="audience">Audience</button>
+  <button class="tab-btn" data-tab="trends">Trends</button>
+</div>
+
+<!-- Campaigns Tab -->
+<div class="tab-panel active" id="tab-campaigns">
+  <div class="charts-row">
+    <div class="chart-card chart-card-full">
+      <div class="chart-header">
+        <h3>Top 10 Campaigns by Clicks</h3>
+      </div>
+      <canvas id="campaignBarChart" height="90"></canvas>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="chart-header"><h3>Campaign Performance Table</h3></div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Campaign</th><th>Impressions</th><th>Clicks</th><th>Conversions</th><th>CTR (%)</th><th>Cost ($)</th></tr>
+        </thead>
+        <tbody>
+          {% for c in top_campaigns %}
+          <tr>
+            <td><span class="rank-badge">{{ loop.index }}</span></td>
+            <td class="campaign-name">{{ c.campaign_name }}</td>
+            <td>{{ "{:,.0f}".format(c.impressions) }}</td>
+            <td>{{ "{:,.0f}".format(c.clicks) }}</td>
+            <td>{{ "{:,.0f}".format(c.conversions) }}</td>
+            <td><span class="ctr-badge">{{ "%.3f"|format(c.ctr) }}</span></td>
+            <td>${{ "{:,.2f}".format(c.cost) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Platforms Tab -->
+<div class="tab-panel" id="tab-platforms">
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header"><h3>Platform Click Share</h3></div>
+      <canvas id="platformDoughnut" height="240"></canvas>
+    </div>
+    <div class="chart-card chart-card-wide">
+      <div class="chart-header"><h3>Platform — Clicks & Conversions</h3></div>
+      <canvas id="platformBar" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="chart-header"><h3>Platform Performance Details</h3></div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr><th>Platform</th><th>Impressions</th><th>Clicks</th><th>Conversions</th><th>CTR (%)</th><th>Spend ($)</th></tr>
+        </thead>
+        <tbody>
+          {% for p in platform_perf %}
+          <tr>
+            <td><span class="platform-tag">{{ p.platform }}</span></td>
+            <td>{{ "{:,.0f}".format(p.impressions) }}</td>
+            <td>{{ "{:,.0f}".format(p.clicks) }}</td>
+            <td>{{ "{:,.0f}".format(p.conversions) }}</td>
+            <td><span class="ctr-badge">{{ "%.3f"|format(p.ctr) }}</span></td>
+            <td>${{ "{:,.2f}".format(p.cost) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Audience Tab -->
+<div class="tab-panel" id="tab-audience">
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header"><h3>Age Group Performance</h3></div>
+      <canvas id="ageChart" height="240"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><h3>Device Breakdown</h3></div>
+      <canvas id="devicePie" height="240"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card chart-card-full">
+      <div class="chart-header"><h3>Top Locations by Conversions</h3></div>
+      <canvas id="locationBar" height="90"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Trends Tab -->
+<div class="tab-panel" id="tab-trends">
+  <div class="charts-row">
+    <div class="chart-card chart-card-full">
+      <div class="chart-header"><h3>Weekly CTR Trend</h3></div>
+      <canvas id="ctrTrend" height="90"></canvas>
+    </div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card chart-card-full">
+      <div class="chart-header"><h3>Weekly Conversion Trend</h3></div>
+      <canvas id="convTrend" height="90"></canvas>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if not no_data %}
+<script>
+const PALETTE = ['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#8b5cf6','#f97316','#14b8a6','#e11d48','#0ea5e9'];
+const campaigns = {{ top_campaigns|tojson }};
+const platforms = {{ platform_perf|tojson }};
+const ageData = {{ age_perf|tojson }};
+const devData = {{ device_perf|tojson }};
+const locData = {{ loc_perf|tojson }};
+const ctrData = {{ ctr_trend|safe }};
+const convData = {{ conv_trend|safe }};
+
+function base(yLabel) {
+  return {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'DM Sans' } } } },
+    scales: {
+      y: { ticks: { color: '#94a3b8', font: { family: 'DM Sans' } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      x: { ticks: { color: '#94a3b8', font: { family: 'DM Sans' } }, grid: { display: false } }
+    }
+  };
+}
+
+// Campaigns bar
+new Chart(document.getElementById('campaignBarChart'), {
+  type: 'bar',
+  data: {
+    labels: campaigns.map(c => c.campaign_name),
+    datasets: [
+      { label: 'Clicks', data: campaigns.map(c => c.clicks), backgroundColor: 'rgba(99,102,241,0.8)', borderRadius: 6, borderSkipped: false },
+      { label: 'Conversions', data: campaigns.map(c => c.conversions), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6, borderSkipped: false }
+    ]
+  },
+  options: base()
+});
+
+// Platform doughnut
+new Chart(document.getElementById('platformDoughnut'), {
+  type: 'doughnut',
+  data: { labels: platforms.map(p => p.platform), datasets: [{ data: platforms.map(p => p.clicks), backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 8 }] },
+  options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'DM Sans' } } } } }
+});
+
+// Platform bar
+new Chart(document.getElementById('platformBar'), {
+  type: 'bar',
+  data: {
+    labels: platforms.map(p => p.platform),
+    datasets: [
+      { label: 'Clicks', data: platforms.map(p => p.clicks), backgroundColor: 'rgba(99,102,241,0.8)', borderRadius: 6, borderSkipped: false },
+      { label: 'Conversions', data: platforms.map(p => p.conversions), backgroundColor: 'rgba(245,158,11,0.8)', borderRadius: 6, borderSkipped: false }
+    ]
+  },
+  options: base()
+});
+
+// Age chart
+new Chart(document.getElementById('ageChart'), {
+  type: 'bar',
+  data: {
+    labels: ageData.map(a => a.age_group),
+    datasets: [
+      { label: 'Clicks', data: ageData.map(a => a.clicks), backgroundColor: 'rgba(6,182,212,0.8)', borderRadius: 6, borderSkipped: false },
+      { label: 'Conversions', data: ageData.map(a => a.conversions), backgroundColor: 'rgba(236,72,153,0.8)', borderRadius: 6, borderSkipped: false }
+    ]
+  },
+  options: base()
+});
+
+// Device pie
+new Chart(document.getElementById('devicePie'), {
+  type: 'doughnut',
+  data: { labels: devData.map(d => d.device), datasets: [{ data: devData.map(d => d.clicks), backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 8 }] },
+  options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'DM Sans' } } } } }
+});
+
+// Location bar
+new Chart(document.getElementById('locationBar'), {
+  type: 'bar',
+  data: {
+    labels: locData.map(l => l.location),
+    datasets: [{ label: 'Conversions', data: locData.map(l => l.conversions), backgroundColor: 'rgba(139,92,246,0.8)', borderRadius: 6, borderSkipped: false }]
+  },
+  options: base()
+});
+
+// CTR trend
+new Chart(document.getElementById('ctrTrend'), {
+  type: 'line',
+  data: {
+    labels: ctrData.labels,
+    datasets: [{ label: 'CTR (%)', data: ctrData.values, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', borderWidth: 2.5, tension: 0.4, fill: true, pointBackgroundColor: '#6366f1', pointRadius: 4 }]
+  },
+  options: base()
+});
+
+// Conv trend
+new Chart(document.getElementById('convTrend'), {
+  type: 'line',
+  data: {
+    labels: convData.labels,
+    datasets: [{ label: 'Conversions', data: convData.values, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)', borderWidth: 2.5, tension: 0.4, fill: true, pointBackgroundColor: '#10b981', pointRadius: 4 }]
+  },
+  options: base()
+});
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

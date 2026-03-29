@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Login — AdOptimizer{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="auth-logo"><i class="fa-solid fa-chart-line"></i></div>
+      <h1 class="auth-brand-name">AdOptimizer</h1>
+      <p class="auth-tagline">Smart Ad Analytics & Campaign Intelligence Platform</p>
+    </div>
+    <div class="auth-features">
+      <div class="feature-item"><i class="fa-solid fa-robot"></i> AI-Powered Predictions</div>
+      <div class="feature-item"><i class="fa-solid fa-chart-bar"></i> Advanced Analytics</div>
+      <div class="feature-item"><i class="fa-solid fa-wand-magic-sparkles"></i> Smart Optimization</div>
+      <div class="feature-item"><i class="fa-solid fa-file-chart-column"></i> Automated Reports</div>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-card">
+      <h2 class="auth-title">Welcome back</h2>
+      <p class="auth-subtitle">Sign in to your account</p>
+
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <div class="form-group-auth">
+          <label>Email Address</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-envelope"></i>
+            <input type="email" name="email" class="auth-input" placeholder="you@company.com" required/>
+          </div>
+        </div>
+
+        <div class="form-group-auth">
+          <label>Password</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" name="password" class="auth-input" placeholder="••••••••" required/>
+          </div>
+        </div>
+
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" name="remember" id="remember"/>
+          <label class="form-check-label text-muted" for="remember">Remember me</label>
+        </div>
+
+        <button type="submit" class="btn-auth-primary">Sign In</button>
+
+        <p class="auth-switch">Don't have an account? <a href="{{ url_for('auth.signup') }}">Create one</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

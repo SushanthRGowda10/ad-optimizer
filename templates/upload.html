@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Upload Dataset — AdOptimizer{% endblock %}
+{% block page_title %}Upload Dataset{% endblock %}
+
+{% block content %}
+<div class="upload-page">
+  <div class="upload-grid">
+
+    <!-- Upload Card -->
+    <div class="upload-main">
+      <div class="section-card">
+        <h3 class="section-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload CSV Dataset</h3>
+        <p class="section-desc">Upload your advertising campaign CSV file. The system will automatically clean, validate, and process your data.</p>
+
+        <form method="POST" action="{{ url_for('dataset.upload') }}" enctype="multipart/form-data" id="uploadForm">
+          <!-- File input lives OUTSIDE the drop zone so clicks don't conflict -->
+          <input type="file" name="file" id="fileInput" accept=".csv" class="file-hidden" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"/>
+
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-icon"><i class="fa-solid fa-file-csv"></i></div>
+            <div class="drop-text">Drag & drop your CSV file here</div>
+            <div class="drop-sub">or <strong style="color:#6366f1;cursor:pointer;">click to browse</strong></div>
+          </div>
+
+          <div class="file-preview" id="filePreview" style="display:none;">
+            <i class="fa-solid fa-circle-check text-success"></i>
+            <span id="fileName"></span>
+            <button type="button" class="btn-clear" id="clearFile"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="upload-progress" id="uploadProgress" style="display:none;">
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-label">Processing...</span>
+          </div>
+
+          <button type="submit" class="btn-upload" id="uploadBtn" disabled>
+            <i class="fa-solid fa-bolt"></i> Process & Analyze
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Info Sidebar -->
+    <div class="upload-sidebar">
+      <div class="section-card">
+        <h4 class="section-title"><i class="fa-solid fa-circle-info"></i> Required Columns</h4>
+        <ul class="column-list">
+          <li><code>ad_id</code> — Unique ad identifier</li>
+          <li><code>campaign_name</code> — Campaign name</li>
+          <li><code>platform</code> — Ad platform (Facebook, Google…)</li>
+          <li><code>impressions</code> — Total impressions</li>
+          <li><code>clicks</code> — Total clicks</li>
+          <li><code>conversions</code> — Conversions count</li>
+          <li><code>cost</code> — Total spend ($)</li>
+          <li><code>age_group</code> — Target age group</li>
+          <li><code>location</code> — Geographic location</li>
+          <li><code>device</code> — Device type</li>
+          <li><code>date</code> — Campaign date (YYYY-MM-DD)</li>
+        </ul>
+      </div>
+
+      <div class="section-card mt-3">
+        <h4 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Processing</h4>
+        <div class="process-step"><span class="step-num">1</span> Validate columns & types</div>
+        <div class="process-step"><span class="step-num">2</span> Remove duplicates</div>
+        <div class="process-step"><span class="step-num">3</span> Fill missing values</div>
+        <div class="process-step"><span class="step-num">4</span> Cap extreme outliers</div>
+        <div class="process-step"><span class="step-num">5</span> Compute CTR, CPC, CR metrics</div>
+        <div class="process-step"><span class="step-num">6</span> Train ML prediction models</div>
+      </div>
+
+      <div class="section-card mt-3">
+        <h4 class="section-title"><i class="fa-solid fa-download"></i> Sample Dataset</h4>
+        <p class="section-desc">Need test data? Use this template.</p>
+        <a href="{{ url_for('static', filename='sample_data.csv') }}" class="btn-download-sample">
+          <i class="fa-solid fa-file-csv"></i> Download Sample CSV
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
+const filePreview= document.getElementById('filePreview');
+const fileNameEl = document.getElementById('fileName');
+const uploadBtn  = document.getElementById('uploadBtn');
+const clearFile  = document.getElementById('clearFile');
+
+/* ── clicking anywhere on the drop zone triggers the hidden input ── */
+dropZone.addEventListener('click', (e) => {
+  e.preventDefault();
+  fileInput.click();
+});
+
+/* ── drag over ── */
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+});
+
+/* ── drop: transfer files into the real <input> via DataTransfer ── */
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0) {
+    try {
+      // Modern browsers support setting files via DataTransfer
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      fileInput.files = dt.files;
+    } catch(err) {
+      // Fallback: store for manual append (older browsers)
+      console.warn('DataTransfer assign not supported:', err);
+    }
+    handleFile(files[0]);
+  }
+});
+
+/* ── normal file picker change ── */
+fileInput.addEventListener('change', () => {
+  if (fileInput.files && fileInput.files.length > 0) {
+    handleFile(fileInput.files[0]);
+  }
+});
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    alert('Only CSV files are allowed.');
+    fileInput.value = '';
+    return;
+  }
+  fileNameEl.textContent = file.name;
+  filePreview.style.display = 'flex';
+  dropZone.style.display    = 'none';
+  uploadBtn.disabled        = false;
+}
+
+clearFile.addEventListener('click', () => {
+  fileInput.value           = '';
+  filePreview.style.display = 'none';
+  dropZone.style.display    = 'flex';
+  uploadBtn.disabled        = true;
+});
+
+/* ── submit: show progress bar ── */
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  // Final guard — make sure a file is actually selected
+  if (!fileInput.files || fileInput.files.length === 0) {
+    e.preventDefault();
+    alert('Please select a CSV file before submitting.');
+    return;
+  }
+  document.getElementById('uploadProgress').style.display = 'block';
+  uploadBtn.disabled    = true;
+  uploadBtn.innerHTML   = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+  let w = 0;
+  const fill = document.getElementById('progressFill');
+  setInterval(() => { w = Math.min(w + Math.random() * 10, 88); fill.style.width = w + '%'; }, 350);
+});
+</script>
+{% endblock %}

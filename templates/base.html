@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}AdOptimizer{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet"/>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-wrap">
+      <div class="logo-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <span class="logo-text">AdOptimizer</span>
+    </div>
+  </div>
+
+  <div class="sidebar-menu">
+    <div class="menu-section">MAIN</div>
+    <a href="{{ url_for('analytics.dashboard') }}" class="nav-item {% if request.endpoint == 'analytics.dashboard' %}active{% endif %}">
+      <i class="fa-solid fa-gauge-high"></i> <span>Dashboard</span>
+    </a>
+
+    {% if has_data %}
+
+    <div class="menu-section">ANALYTICS & AI</div>
+    <a href="{{ url_for('analytics.analytics') }}" class="nav-item {% if request.endpoint == 'analytics.analytics' %}active{% endif %}">
+      <i class="fa-solid fa-chart-pie"></i> <span>Analytics</span>
+    </a>
+    <a href="{{ url_for('analytics.optimization') }}" class="nav-item {% if request.endpoint == 'analytics.optimization' %}active{% endif %}">
+      <i class="fa-solid fa-sliders"></i> <span>Optimized Analysis</span>
+    </a>
+    <a href="{{ url_for('prediction.prediction') }}" class="nav-item {% if request.endpoint == 'prediction.prediction' %}active{% endif %}">
+      <i class="fa-solid fa-brain"></i> <span>AI Prediction</span>
+    </a>
+    
+    <div class="menu-section">REPORTS</div>
+    <a href="{{ url_for('analytics.reports') }}" class="nav-item {% if request.endpoint == 'analytics.reports' %}active{% endif %}">
+      <i class="fa-solid fa-file-chart-column"></i> <span>Reports</span>
+    </a>
+    <a href="{{ url_for('dataset.download_csv') }}" class="nav-item">
+      <i class="fa-solid fa-file-csv"></i> <span>Export CSV</span>
+    </a>
+    <a href="{{ url_for('dataset.download_excel') }}" class="nav-item">
+      <i class="fa-solid fa-file-excel"></i> <span>Export Excel</span>
+    </a>
+    {% else %}
+    
+    <div class="menu-section">GET STARTED</div>
+    <p style="padding: 9px 18px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+      <i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>
+      Upload a dataset from your profile to start analyzing
+    </p>
+    {% endif %}
+
+    <div class="menu-section">ACCOUNT</div>
+    <a href="{{ url_for('auth.profile') }}" class="nav-item {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+      <i class="fa-solid fa-user-circle"></i> <span>Profile</span>
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-item nav-item-danger">
+      <i class="fa-solid fa-right-from-bracket"></i> <span>Logout</span>
+    </a>
+  </div>
+</nav>
+
+<div class="main-wrapper" id="mainWrapper">
+  <header class="topbar">
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <div class="user-avatar">{{ current_user.username[0].upper() }}</div>
+        <span>{{ current_user.username }}</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show flash-alert" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+  </div>
+
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% else %}
+<div class="auth-wrapper">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+  {% block auth_content %}{% endblock %}
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

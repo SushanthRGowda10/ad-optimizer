@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — AdOptimizer{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Greeting Banner -->
+<div class="greeting-banner">
+  <div class="greeting-content">
+    <div class="greeting-icon">
+      {% if current_hour >= 5 and current_hour < 12 %}
+        <i class="fa-solid fa-sun"></i>
+      {% elif current_hour >= 12 and current_hour < 17 %}
+        <i class="fa-solid fa-cloud-sun"></i>
+      {% else %}
+        <i class="fa-solid fa-moon"></i>
+      {% endif %}
+    </div>
+    <div class="greeting-text">
+      <h2>
+        {% if current_hour >= 5 and current_hour < 12 %}
+          Good Morning, {{ current_user.username }}! ☀️
+        {% elif current_hour >= 12 and current_hour < 17 %}
+          Good Afternoon, {{ current_user.username }}! 🌤️
+        {% else %}
+          Good Evening, {{ current_user.username }}! 🌙
+        {% endif %}
+      </h2>
+      <p>Ready to optimize your ad campaigns today?</p>
+    </div>
+  </div>
+</div>
+
+{% if no_data %}
+
+<!-- Upload Dataset Section (No Data State) -->
+<div class="dashboard-section">
+  <div class="upload-container">
+    <h3 class="section-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Your First Dataset</h3>
+    <p class="section-desc">Start by uploading your advertising campaign CSV file. Our AI will automatically analyze and provide insights.</p>
+    
+    <form method="POST" action="{{ url_for('dataset.upload') }}" enctype="multipart/form-data" id="uploadForm">
+      <input type="file" name="file" id="fileInput" accept=".csv" class="file-hidden"/>
+      
+      <div class="upload-dropzone" id="dropZone">
+        <div class="upload-icon">
+          <i class="fa-solid fa-file-csv"></i>
+        </div>
+        <h4 class="upload-title">Drag and drop your dataset here</h4>
+        <p class="upload-subtitle">or <strong>click to browse files</strong></p>
+        <p class="upload-format">Supported format: CSV (max 10MB)</p>
+      </div>
+      
+      <div class="file-preview" id="filePreview" style="display:none;">
+        <div class="file-info">
+          <i class="fa-solid fa-circle-check text-success"></i>
+          <span id="fileName" class="file-name"></span>
+        </div>
+        <button type="button" class="btn-clear-file" id="clearFile">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="upload-progress" id="uploadProgress" style="display:none;">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <span class="progress-label">Processing...</span>
+      </div>
+      
+      <button type="submit" class="btn-upload" id="uploadBtn" disabled>
+        <i class="fa-solid fa-bolt"></i> Process & Analyze
+      </button>
+    </form>
+  </div>
+  
+  <!-- Required Columns Info -->
+  <div class="info-grid mt-3">
+    <div class="info-card">
+      <h4><i class="fa-solid fa-circle-info"></i> Required Columns</h4>
+      <ul class="column-list">
+        <li><code>ad_id</code>, <code>campaign_name</code>, <code>platform</code></li>
+        <li><code>impressions</code>, <code>clicks</code>, <code>conversions</code></li>
+        <li><code>cost</code>, <code>age_group</code>, <code>location</code>, <code>device</code>, <code>date</code></li>
+      </ul>
+    </div>
+    
+    <div class="info-card">
+      <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Processing</h4>
+      <div class="process-steps">
+        <div class="process-step"><span class="step-num">1</span> Validate & clean data</div>
+        <div class="process-step"><span class="step-num">2</span> Remove duplicates</div>
+        <div class="process-step"><span class="step-num">3</span> Compute CTR & metrics</div>
+        <div class="process-step"><span class="step-num">4</span> Train ML models</div>
+      </div>
+    </div>
+    
+    <div class="info-card">
+      <h4><i class="fa-solid fa-download"></i> Need Sample Data?</h4>
+      <p class="section-desc">Download our template CSV file to get started.</p>
+      <a href="{{ url_for('static', filename='sample_data.csv') }}" class="btn-download-sample">
+        <i class="fa-solid fa-file-csv"></i> Download Sample CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+{% else %}
+
+<!-- Upload Dataset Section (With Data - Compact) -->
+<div class="dashboard-section">
+  <div class="upload-container">
+    <div class="section-header-flex">
+      <h3 class="section-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload New Dataset</h3>
+      <button class="btn-toggle-upload" id="toggleUploadBtn">
+        <i class="fa-solid fa-plus"></i> Add Dataset
+      </button>
+    </div>
+    
+    <div id="uploadSection" style="display:none;">
+      <p class="section-desc">Upload a new CSV file to replace your current dataset.</p>
+      
+      <form method="POST" action="{{ url_for('dataset.upload') }}" enctype="multipart/form-data" id="uploadForm">
+        <input type="file" name="file" id="fileInput" accept=".csv" class="file-hidden"/>
+        
+        <div class="upload-dropzone" id="dropZone">
+          <div class="upload-icon">
+            <i class="fa-solid fa-file-csv"></i>
+          </div>
+          <h4 class="upload-title">Drag and drop your dataset here</h4>
+          <p class="upload-subtitle">or <strong>click to browse files</strong></p>
+          <p class="upload-format">Supported format: CSV (max 10MB)</p>
+        </div>
+        
+        <div class="file-preview" id="filePreview" style="display:none;">
+          <div class="file-info">
+            <i class="fa-solid fa-circle-check text-success"></i>
+            <span id="fileName" class="file-name"></span>
+          </div>
+          <button type="button" class="btn-clear-file" id="clearFile">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        
+        <div class="upload-progress" id="uploadProgress" style="display:none;">
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressFill"></div>
+          </div>
+          <span class="progress-label">Processing...</span>
+        </div>
+        
+        <button type="submit" class="btn-upload" id="uploadBtn" disabled>
+          <i class="fa-solid fa-bolt"></i> Process & Analyze
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Feature Cards Row -->
+<div class="feature-cards-row">
+  <!-- AI Prediction Card -->
+  <div class="feature-card">
+    <div class="feature-card-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+      <i class="fa-solid fa-brain"></i>
+    </div>
+    <h3 class="feature-card-title">AI Prediction</h3>
+    <div class="feature-card-description">
+      <p>Predict future campaign performance using AI models.</p>
+      <p>Analyze impressions, clicks, and conversions.</p>
+      <p>Generate insights for better marketing decisions.</p>
+    </div>
+  </div>
+  
+  <!-- AI Optimizer Card -->
+  <div class="feature-card">
+    <div class="feature-card-icon" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+    </div>
+    <h3 class="feature-card-title">AI Optimizer</h3>
+    <div class="feature-card-description">
+      <p>Optimize ad budget allocation automatically.</p>
+      <p>Get AI-powered campaign recommendations.</p>
+      <p>Maximize ROI with intelligent targeting.</p>
+    </div>
+  </div>
+  
+  <!-- Reports Card -->
+  <div class="feature-card">
+    <div class="feature-card-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+      <i class="fa-solid fa-file-chart-column"></i>
+    </div>
+    <h3 class="feature-card-title">Reports</h3>
+    <div class="feature-card-description">
+      <p>View detailed campaign performance reports.</p>
+      <p>Analyze metrics such as CTR, conversions, and cost.</p>
+      <p>Identify trends and improve advertising strategy.</p>
+    </div>
+  </div>
+  
+  <!-- Export Data Card -->
+  <div class="feature-card">
+    <div class="feature-card-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+      <i class="fa-solid fa-file-export"></i>
+    </div>
+    <h3 class="feature-card-title">Export Data</h3>
+    <div class="feature-card-description">
+      <p>Download campaign data easily.</p>
+      <p>Export data in CSV or Excel format.</p>
+      <p>Use the exported data for external analysis.</p>
+    </div>
+  </div>
+</div>
+
+<!-- AI Insights -->
+{% if insights %}
+<div class="section-card mt-3">
+  <div class="chart-header">
+    <h3><i class="fa-solid fa-lightbulb"></i> AI Insights</h3>
+  </div>
+
+  <ul class="insight-list">
+    {% for insight in insights %}
+      <li><i class="fa-solid fa-check-circle text-success"></i> {{ insight }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- Model Comparison -->
+{% if model_comparison %}
+<div class="section-card mt-3">
+  <div class="chart-header">
+    <h3><i class="fa-solid fa-brain"></i> Model Performance</h3>
+  </div>
+
+  {% for target, models in model_comparison.items() %}
+  <div class="model-section">
+    <div class="model-target-label">
+      Predicting: <strong>{{ target }}</strong>
+    </div>
+
+    <div class="model-metrics-grid">
+
+      {% set best_r2 = 0 %}
+      {% for m in models.values() %}
+        {% if m.r2 > best_r2 %}
+          {% set best_r2 = m.r2 %}
+        {% endif %}
+      {% endfor %}
+
+      {% for name, metrics in models.items() %}
+      <div class="model-metric-card {% if metrics.r2 == best_r2 %}model-active{% endif %}">
+        <div class="model-name">{{ name }}</div>
+        <div class="model-r2">R² <span>{{ metrics.r2 }}</span></div>
+        <div class="model-mae">MAE <span>{{ metrics.mae }}</span></div>
+
+        {% if metrics.r2 == best_r2 %}
+        <div class="best-badge">Best</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="section-card mt-3 text-center">
+  <div class="chart-header">
+    <h3><i class="fa-solid fa-rocket"></i> Quick Actions</h3>
+  </div>
+
+  <div class="quick-actions">
+    <a href="/prediction" class="btn btn-primary m-2">
+      <i class="fa-solid fa-brain"></i> Run Prediction
+    </a>
+
+    <a href="/optimization" class="btn btn-success m-2">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> Optimize Campaign
+    </a>
+
+    <a href="/ab-test" class="btn btn-warning m-2">
+      <i class="fa-solid fa-vial"></i> A/B Testing
+    </a>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById("toggleUploadBtn")?.addEventListener("click", function () {
+  const section = document.getElementById("uploadSection");
+  section.style.display = (section.style.display === "none") ? "block" : "none";
+});
+
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+const filePreview = document.getElementById("filePreview");
+const fileName = document.getElementById("fileName");
+const clearFile = document.getElementById("clearFile");
+const uploadBtn = document.getElementById("uploadBtn");
+
+function updateFilePreview() {
+  if (!fileInput) return;
+  if (fileInput.files && fileInput.files.length > 0) {
+    if (fileName) fileName.textContent = fileInput.files[0].name;
+    if (filePreview) filePreview.style.display = "flex";
+    if (uploadBtn) uploadBtn.disabled = false;
+  }
+}
+
+if (dropZone && fileInput) {
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+
+    if (e.dataTransfer.files.length > 0) {
+      fileInput.files = e.dataTransfer.files;
+      updateFilePreview();
+    }
+  });
+
+  fileInput.addEventListener("change", updateFilePreview);
+}
+
+if (clearFile && fileInput) {
+  clearFile.addEventListener("click", () => {
+    fileInput.value = "";
+    if (filePreview) filePreview.style.display = "none";
+    if (uploadBtn) uploadBtn.disabled = true;
+  });
+}
+</script>
+{% endblock %}

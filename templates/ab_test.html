@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}A/B Testing — AdOptimizer{% endblock %}
+{% block page_title %}A/B Testing{% endblock %}
+
+{% block content %}
+<div class="section-card">
+  <div class="chart-header">
+    <h3><i class="fa-solid fa-vial"></i> A/B Testing Simulator</h3>
+  </div>
+
+  <p class="section-desc">Compare two ads by CTR and find the better performer.</p>
+
+  <form method="POST" action="{{ url_for('ab_test.ab_test') }}">
+    <div class="prediction-grid">
+
+      <div class="prediction-form-card section-card">
+        <div class="form-group-pred">
+          <label>CTR of Ad A (%)</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            name="ctr_a"
+            class="pred-input"
+            value="{{ ctr_a }}"
+            required
+          >
+        </div>
+
+        <div class="form-group-pred">
+          <label>CTR of Ad B (%)</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            name="ctr_b"
+            class="pred-input"
+            value="{{ ctr_b }}"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn-predict">
+          <i class="fa-solid fa-scale-balanced"></i> Compare Ads
+        </button>
+      </div>
+
+      <div class="prediction-results">
+        <div class="section-card prediction-placeholder">
+          {% if result %}
+            <div class="placeholder-icon">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h4>Test Result</h4>
+            <p>{{ result }}</p>
+
+            {% if winner == 'A' %}
+              <div class="perf-verdict verdict-good">
+                <i class="fa-solid fa-circle-check"></i> Winner: Ad A
+              </div>
+            {% elif winner == 'B' %}
+              <div class="perf-verdict verdict-good">
+                <i class="fa-solid fa-circle-check"></i> Winner: Ad B
+              </div>
+            {% elif winner == 'Tie' %}
+              <div class="perf-verdict verdict-mid">
+                <i class="fa-solid fa-equals"></i> Result: Tie
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="placeholder-icon">
+              <i class="fa-solid fa-flask"></i>
+            </div>
+            <h4>Run an A/B test</h4>
+            <p>Enter CTR values for Ad A and Ad B, then click Compare Ads.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+{% if chart_values %}
+<div class="section-card mt-3">
+  <div class="chart-header">
+    <h3><i class="fa-solid fa-chart-column"></i> CTR Comparison Graph</h3>
+  </div>
+  <canvas id="abTestChart" height="120"></canvas>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if chart_values %}
+<script>
+const abCtx = document.getElementById('abTestChart');
+if (abCtx) {
+  new Chart(abCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|tojson }},
+      datasets: [{
+        label: 'CTR (%)',
+        data: {{ chart_values|tojson }},
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: { color: '#f1f5f9' }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#94a3b8' },
+          grid: { color: 'rgba(255,255,255,0.08)' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#94a3b8' },
+          grid: { color: 'rgba(255,255,255,0.08)' }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endif %}
+{% endblock %}

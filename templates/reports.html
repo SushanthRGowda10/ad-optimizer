@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Reports — AdOptimizer{% endblock %}
+{% block page_title %}Campaign Reports{% endblock %}
+
+{% block content %}
+{% if no_data %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fa-solid fa-file-chart-column"></i></div>
+  <h3>No Data Available</h3>
+  <p>Upload a campaign dataset to generate reports.</p>
+  <a href="{{ url_for('dataset.upload') }}" class="btn-primary-custom">Upload Dataset</a>
+</div>
+{% else %}
+
+<!-- Export Actions -->
+<div class="report-actions">
+  <div class="report-actions-title">Export Reports</div>
+  <a href="{{ url_for('dataset.download_csv') }}" class="btn-export btn-export-csv">
+    <i class="fa-solid fa-file-csv"></i> Download CSV
+  </a>
+  <a href="{{ url_for('dataset.download_excel') }}" class="btn-export btn-export-excel">
+    <i class="fa-solid fa-file-excel"></i> Download Excel
+  </a>
+</div>
+
+<!-- Performance Summary -->
+<div class="section-card">
+  <h3 class="section-title"><i class="fa-solid fa-chart-line"></i> Performance Summary</h3>
+  <div class="summary-grid">
+    <div class="summary-item"><span class="s-label">Total Campaigns</span><span class="s-val">{{ stats.total_campaigns }}</span></div>
+    <div class="summary-item"><span class="s-label">Total Impressions</span><span class="s-val">{{ "{:,.0f}".format(stats.total_impressions) }}</span></div>
+    <div class="summary-item"><span class="s-label">Total Clicks</span><span class="s-val">{{ "{:,.0f}".format(stats.total_clicks) }}</span></div>
+    <div class="summary-item"><span class="s-label">Total Conversions</span><span class="s-val">{{ "{:,.0f}".format(stats.total_conversions) }}</span></div>
+    <div class="summary-item"><span class="s-label">Average CTR</span><span class="s-val">{{ stats.avg_ctr }}%</span></div>
+    <div class="summary-item"><span class="s-label">Avg CPC</span><span class="s-val">${{ stats.avg_cpc }}</span></div>
+    <div class="summary-item"><span class="s-label">Total Ad Spend</span><span class="s-val">${{ "{:,.2f}".format(stats.total_cost) }}</span></div>
+    <div class="summary-item"><span class="s-label">Avg Conv Rate</span><span class="s-val">{{ stats.avg_conversion_rate }}%</span></div>
+  </div>
+</div>
+
+<!-- Top Campaigns -->
+<div class="table-card">
+  <div class="chart-header"><h3>Top Campaign Insights</h3></div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Campaign</th><th>Impressions</th><th>Clicks</th><th>Conversions</th><th>CTR (%)</th><th>Spend ($)</th></tr>
+      </thead>
+      <tbody>
+        {% for c in top_campaigns %}
+        <tr>
+          <td><span class="rank-badge">{{ loop.index }}</span></td>
+          <td class="campaign-name">{{ c.campaign_name }}</td>
+          <td>{{ "{:,.0f}".format(c.impressions) }}</td>
+          <td>{{ "{:,.0f}".format(c.clicks) }}</td>
+          <td>{{ "{:,.0f}".format(c.conversions) }}</td>
+          <td><span class="ctr-badge">{{ "%.3f"|format(c.ctr) }}</span></td>
+          <td>${{ "{:,.2f}".format(c.cost) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Optimization Recommendations -->
+<div class="section-card">
+  <h3 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Optimization Recommendations</h3>
+  <div class="report-rec-grid">
+    <div class="report-rec"><strong>Best Platform</strong><p>{{ recs.best_platform }}</p></div>
+    <div class="report-rec"><strong>Best Age Group</strong><p>{{ recs.best_age_group }}</p></div>
+    <div class="report-rec"><strong>Best Device</strong><p>{{ recs.best_device }}</p></div>
+    <div class="report-rec"><strong>Top Campaign</strong><p>{{ recs.best_campaign }}</p></div>
+  </div>
+
+  {% if recs.increase_budget %}
+  <div class="report-action-block">
+    <div class="report-action-label action-label-green">↑ Increase Budget</div>
+    {% for c in recs.increase_budget %}<span class="report-tag">{{ c }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if recs.pause_campaigns %}
+  <div class="report-action-block">
+    <div class="report-action-label action-label-red">⏸ Pause</div>
+    {% for c in recs.pause_campaigns %}<span class="report-tag report-tag-red">{{ c }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="insight-card mt-3">
+    <div class="insight-icon"><i class="fa-solid fa-lightbulb"></i></div>
+    <div class="insight-text"><p>{{ recs.budget_insight }}</p></div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

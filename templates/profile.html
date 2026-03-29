@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Profile — AdOptimizer{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="profile-grid">
+
+  <div class="section-card profile-card">
+    <div class="profile-avatar-lg">{{ current_user.username[0].upper() }}</div>
+    <h2 class="profile-name">{{ current_user.username }}</h2>
+    <p class="profile-email">{{ current_user.email }}</p>
+    <div class="profile-since">Member since {{ current_user.created_at.strftime('%B %Y') }}</div>
+
+    <div class="profile-stats">
+      <div class="p-stat"><span class="p-stat-val">{{ datasets|length }}</span><span class="p-stat-lbl">Datasets</span></div>
+    </div>
+  </div>
+
+  <div class="section-card flex-1">
+    <h3 class="section-title"><i class="fa-solid fa-database"></i> Uploaded Datasets</h3>
+    {% if datasets %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr><th>Filename</th><th>Rows</th><th>Columns</th><th>Uploaded</th><th>Status</th><th>View</th></tr>
+        </thead>
+        <tbody>
+          {% for ds in datasets|sort(attribute='uploaded_at', reverse=True) %}
+          <tr>
+            <td class="campaign-name">{{ ds.original_name }}</td>
+            <td>{{ ds.row_count }}</td>
+            <td>{{ ds.column_count }}</td>
+            <td>{{ ds.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              {% if ds.is_active %}
+                <span class="status-badge status-green">Active</span>
+              {% else %}
+                <span class="status-badge status-red">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="action-buttons">
+                <a href="{{ url_for('dataset.view_dataset', dataset_id=ds.id) }}" class="btn-icon" title="View Dataset & Reports">
+                  <i class="fa-solid fa-eye"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-action">No datasets uploaded yet. <a href="{{ url_for('dataset.upload') }}">Upload one now.</a></div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
