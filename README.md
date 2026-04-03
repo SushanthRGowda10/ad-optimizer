@@ -9,11 +9,16 @@ Machine learning predictions
 CSV dataset upload
 Performance insights (CTR, conversions)
 Optimization recommendations
+
+
 🛠️ Tech Stack
 Python, Flask
 Pandas, Scikit-learn
 HTML, CSS, Bootstrap
 Chart.js
+
+
+
 ▶️ Run the Project
 git clone https://github.com/SushanthRGowda10/ad-optimizer.git
 cd ad-optimizer
